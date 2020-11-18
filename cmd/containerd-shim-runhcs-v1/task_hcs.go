@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -124,7 +125,18 @@ func newHcsTask(
 
 	owner := filepath.Base(os.Args[0])
 
-	io, err := cmd.NewNpipeIO(ctx, req.Stdin, req.Stdout, req.Stderr, req.Terminal)
+	var (
+		io cmd.UpstreamIO
+	)
+
+	u, err := url.Parse(req.Stdout)
+
+	if u.Scheme != "binary" || err != nil {
+		io, err = cmd.NewNpipeIO(ctx, req.Stdin, req.Stdout, req.Stderr, req.Terminal)
+	} else {
+		io, err = cmd.NewBinaryIO(ctx, req.ID, u)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +189,8 @@ func newHcsTask(
 		req.Bundle,
 		ht.isWCOW,
 		s.Process,
-		io)
+		io,
+	)
 
 	if parent != nil {
 		// We have a parent UVM. Listen for its exit and forcibly close this
@@ -284,11 +297,35 @@ func (ht *hcsTask) CreateExec(ctx context.Context, req *task.ExecProcessRequest,
 		return errors.Wrapf(errdefs.ErrFailedPrecondition, "exec: '' in task: '%s' must be running to create additional execs", ht.id)
 	}
 
-	io, err := cmd.NewNpipeIO(ctx, req.Stdin, req.Stdout, req.Stderr, req.Terminal)
+	var (
+		io  cmd.UpstreamIO
+		err error
+	)
+
+	u, err := url.Parse(req.Stdout)
+
+	if err != nil || u.Scheme != "binary" {
+		io, err = cmd.NewNpipeIO(ctx, req.Stdin, req.Stdout, req.Stderr, req.Terminal)
+	} else {
+		io, err = cmd.NewBinaryIO(ctx, req.ID, u)
+	}
+
 	if err != nil {
 		return err
 	}
-	he := newHcsExec(ctx, ht.events, ht.id, ht.host, ht.c, req.ExecID, ht.init.Status().Bundle, ht.isWCOW, spec, io)
+	he := newHcsExec(
+		ctx,
+		ht.events,
+		ht.id,
+		ht.host,
+		ht.c,
+		req.ExecID,
+		ht.init.Status().Bundle,
+		ht.isWCOW,
+		spec,
+		io,
+	)
+
 	ht.execs.Store(req.ExecID, he)
 
 	// Publish the created event
