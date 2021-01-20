@@ -28,6 +28,19 @@ type vpmemInfo struct {
 	refCount uint32
 }
 
+type vpmemMapping struct {
+	hostPath     string
+	uvmPath      string
+	deviceOffset uint64
+	deviceSize   uint64
+	refCount     uint32
+}
+
+type vpmemDevice struct {
+	maxSize  uint64
+	mappings []*vpmemMapping
+}
+
 type nicInfo struct {
 	ID       guid.GUID
 	Endpoint *hns.HNSEndpoint
@@ -82,6 +95,11 @@ type UtilityVM struct {
 	vpmemDevices      [MaxVPMEMCount]*vpmemInfo // Limited by ACPI size.
 	vpmemMaxCount     uint32                    // The max number of VPMem devices.
 	vpmemMaxSizeBytes uint64                    // The max size of the layer in bytes per vPMem device.
+
+	mappedVPMemDevices [MaxVPMEMCount]*vpmemDevice
+	// TODO: Temporary solution for proof of concept purposes
+	// Single VPMEM device where we'll pack all of the layers
+	vpmem *vpmemDevice
 
 	// SCSI devices that are mapped into a Windows or Linux utility VM
 	scsiLocations       [4][64]*SCSIMount // Hyper-V supports 4 controllers, 64 slots per controller. Limited to 1 controller for now though.

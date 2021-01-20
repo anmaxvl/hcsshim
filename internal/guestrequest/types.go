@@ -43,10 +43,19 @@ type LCOWMappedDirectory struct {
 	ReadOnly  bool   `json:"ReadOnly,omitempty"`
 }
 
+// One of potentially multiple read-only layers mapped on a VPMem device
+type LCOWMappedLayer struct {
+	MountPath           string `json:"MountPath,omitempty"`
+	DeviceOffsetInBytes uint64 `json:"DeviceOffsetInBytes,omitempty"`
+	DeviceSizeInBytes   uint64 `json:"DeviceSizeInBytes,omitempty"`
+}
+
 // Read-only layers over VPMem
 type LCOWMappedVPMemDevice struct {
 	DeviceNumber uint32 `json:"DeviceNumber,omitempty"`
 	MountPath    string `json:"MountPath,omitempty"`
+	// Mapping is ignored when MountPath is not empty
+	Mapping LCOWMappedLayer `json:"Mapping,omitempty"`
 }
 
 type LCOWMappedVPCIDevice struct {
