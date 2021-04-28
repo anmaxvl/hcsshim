@@ -17,6 +17,13 @@ const (
 	// doesn't specify.
 	DefaultVPMemSizeBytes = 4 * 1024 * 1024 * 1024 // 4GB
 
+	// MaxSCSICount is the maximum number of SCSI  devices that may be added to a utility VM
+	MaxSCSICount = 128
+
+	// DefaultSCSICount is the default number of SCSI devices that may be added to a
+	// utility VM if the create  request doesn't specify how many
+	DefaultSCSICount = 64
+
 	// LCOWMountPathPrefix is the path format in the LCOW UVM where non global mounts, such
 	// as Plan9 mounts are added
 	LCOWMountPathPrefix = "/mounts/m%d"

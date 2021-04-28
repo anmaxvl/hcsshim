@@ -89,6 +89,10 @@ type Options struct {
 	// that receives the UVMs set of NICs from this proxy instead of enumerating
 	// the endpoints locally.
 	NetworkConfigProxy string
+
+	// SCSIDeviceCount is number of SCSI devices that can be added for a single controller.
+	// Defaults to `DefaultSCSICount`. Limit at 128.
+	SCSIDeviceCount uint32
 }
 
 // compares the create opts used during template creation with the create opts
@@ -186,6 +190,7 @@ func newDefaultOptions(id, owner string) *Options {
 		ProcessorCount:          defaultProcessorCount(),
 		ExternalGuestConnection: true,
 		FullyPhysicallyBacked:   false,
+		SCSIDeviceCount:         DefaultSCSICount,
 	}
 
 	if opts.Owner == "" {

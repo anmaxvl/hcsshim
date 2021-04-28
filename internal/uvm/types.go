@@ -85,8 +85,9 @@ type UtilityVM struct {
 	vpmemMaxSizeBytes uint64                    // The max size of the layer in bytes per vPMem device.
 
 	// SCSI devices that are mapped into a Windows or Linux utility VM
-	scsiLocations       [4][64]*SCSIMount // Hyper-V supports 4 controllers, 64 slots per controller. Limited to 1 controller for now though.
-	scsiControllerCount uint32            // Number of SCSI controllers in the utility VM
+	scsiLocations       [4][MaxSCSICount]*SCSIMount // Hyper-V supports 4 controllers, 64 slots per controller. Limited to 1 controller for now though.
+	scsiMaxCount        uint32
+	scsiControllerCount uint32 // Number of SCSI controllers in the utility VM
 
 	vpciDevices map[string]*VPCIDevice // map of device instance id to vpci device
 

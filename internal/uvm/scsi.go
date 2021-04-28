@@ -118,12 +118,12 @@ func newSCSIMount(uvm *UtilityVM, hostPath, uvmPath, attachmentType string, refC
 // allocateSCSISlot finds the next available slot on the
 // SCSI controllers associated with a utility VM to use.
 // Lock must be held when calling this function
-func (uvm *UtilityVM) allocateSCSISlot(ctx context.Context) (int, int, error) {
+func (uvm *UtilityVM) allocateSCSISlot(ctx context.Context) (int, uint32, error) {
 	for controller, luns := range uvm.scsiLocations {
-		for lun, sm := range luns {
+		for i := uint32(0); i < uvm.scsiMaxCount; i++ {
 			// If sm is nil, we have found an open slot so we allocate a new SCSIMount
-			if sm == nil {
-				return controller, lun, nil
+			if luns[i] == nil {
+				return controller, i, nil
 			}
 		}
 	}
