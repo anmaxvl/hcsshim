@@ -11,6 +11,7 @@ require (
 	github.com/containerd/ttrpc v1.0.2
 	github.com/containerd/typeurl v1.0.2
 	github.com/gogo/protobuf v1.3.2
+	github.com/google/go-containerregistry v0.4.1
 	github.com/opencontainers/runtime-spec v1.0.3-0.20200929063507-e6143ca7d51d
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
