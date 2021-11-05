@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -199,6 +200,7 @@ func MountContainerLayers(ctx context.Context, containerID string, layerFolders 
 				layerPath = filepath.Join(layerPath, "layer.vhd")
 				uvmPath   string
 			)
+
 			uvmPath, err = addLCOWLayer(ctx, vm, layerPath)
 			if err != nil {
 				return "", fmt.Errorf("failed to add LCOW layer: %s", err)
@@ -286,6 +288,20 @@ func addLCOWLayer(ctx context.Context, vm *uvm.UtilityVM, layerPath string) (uvm
 		}
 	}
 
+	if hashDevPath, err := vm.CreateHashDevice(ctx, layerPath); err != nil {
+		log.G(ctx).WithError(err).Debug("failed to create hash-device")
+	} else {
+		if hd, err := vm.AddHashDevice(ctx, hashDevPath, layerPath); err != nil {
+			log.G(ctx).WithError(err).WithField("hashDevPath", hashDevPath).Debug("failed to add hash device")
+		} else {
+			log.G(ctx).WithFields(logrus.Fields{
+				"hashDevPath": hd.HostPath,
+				"Controller":  hd.Controller,
+				"LUN":         hd.LUN,
+			}).Debug("added hash device")
+		}
+	}
+
 	options := []string{"ro"}
 	uvmPath = fmt.Sprintf(uvm.LCOWGlobalMountPrefix, vm.UVMMountCounter())
 	sm, err := vm.AddSCSI(ctx, layerPath, uvmPath, true, false, options, uvm.VMAccessTypeNoop)
@@ -316,6 +332,10 @@ func removeLCOWLayer(ctx context.Context, vm *uvm.UtilityVM, layerPath string) e
 				"layerType": "scsi",
 			}).Debug("Removed LCOW layer")
 			return nil
+		}
+		hashDevPath := fmt.Sprintf(path.Dir(layerPath), "hash-dev.vhd")
+		if err := vm.RemoveHashDevice(ctx, hashDevPath, layerPath); err != nil {
+			log.G(ctx).WithField("hashDevPath", hashDevPath).Debug("failed to remove hash-device")
 		}
 		return errors.Wrap(err, "failed to remove SCSI layer")
 	}

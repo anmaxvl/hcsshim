@@ -63,6 +63,8 @@ type LCOWMappedLayer struct {
 // DeviceVerityInfo represents dm-verity metadata of a block device.
 // Most of the fields can be directly mapped to table entries https://www.kernel.org/doc/html/latest/admin-guide/device-mapper/verity.html
 type DeviceVerityInfo struct {
+	// DevicePath is the hash-device, if it's not appended to the data device.
+	DevicePath string `json:",omitempty"`
 	// Ext4SizeInBytes is the size of ext4 file system
 	Ext4SizeInBytes int64 `json:",omitempty"`
 	// Version is the on-disk hash format

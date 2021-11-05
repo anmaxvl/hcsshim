@@ -436,6 +436,25 @@ func (uvm *UtilityVM) addSCSIActual(ctx context.Context, addReq *addSCSIRequest)
 			}
 		} else {
 			var verity *guestrequest.DeviceVerityInfo
+			//if hashDev, ok := uvm.hashDevices[addReq.hostPath]; ok {
+			//	dmvsb, err := dmverity.ReadDMVerityInfo(hashDev.HostPath, 0)
+			//	if err != nil {
+			//		log.G(ctx).WithError(err).WithField("hostPath", hashDev.HostPath).Debug("unable to read dm-verity from hash device")
+			//	}
+			//	if dmvsb != nil {
+			//		verity = &guestrequest.DeviceVerityInfo{
+			//			DevicePath:      hashDev.UVMPath,
+			//			Ext4SizeInBytes: int64(dmvsb.DataBlockSize) * int64(dmvsb.DataBlocks),
+			//			Version:         int(dmvsb.Version),
+			//			Algorithm:       dmvsb.Algorithm,
+			//			SuperBlock:      true,
+			//			RootDigest:      dmvsb.RootDigest,
+			//			Salt:            dmvsb.Salt,
+			//			BlockSize:       int(dmvsb.DataBlockSize),
+			//		}
+			//	}
+			//}
+			//if verity == nil {
 			if v, iErr := readVeritySuperBlock(ctx, sm.HostPath); iErr != nil {
 				log.G(ctx).WithError(iErr).WithField("hostPath", sm.HostPath).Debug("unable to read dm-verity information from VHD")
 			} else {
@@ -447,6 +466,7 @@ func (uvm *UtilityVM) addSCSIActual(ctx context.Context, addReq *addSCSIRequest)
 				}
 				verity = v
 			}
+			//}
 
 			guestReq.Settings = guestrequest.LCOWMappedVirtualDisk{
 				MountPath:  sm.UVMPath,
@@ -520,7 +540,6 @@ func (uvm *UtilityVM) allocateSCSIMount(
 	log.G(ctx).WithFields(uvm.scsiLocations[controller][lun].logFormat()).Debug("allocated SCSI mount")
 
 	return uvm.scsiLocations[controller][lun], false, nil
-
 }
 
 // GetScsiUvmPath returns the guest mounted path of a SCSI drive.

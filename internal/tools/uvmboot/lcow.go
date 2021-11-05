@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/Microsoft/hcsshim/internal/cmd"
-	"github.com/Microsoft/hcsshim/internal/uvm"
+	uvmpkg "github.com/Microsoft/hcsshim/internal/uvm"
 	"github.com/containerd/console"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -21,6 +22,8 @@ const (
 	outputHandlingArgName = "output-handling"
 	kernelArgsArgName     = "kernel-args"
 	rootFSTypeArgName     = "root-fs-type"
+	mountSCSIArgName      = "mount-scsi"
+	noGuestMountArgName   = "no-guest-mount"
 	vpMemMaxCountArgName  = "vpmem-max-count"
 	vpMemMaxSizeArgName   = "vpmem-max-size"
 )
@@ -79,10 +82,14 @@ var lcowCommand = cli.Command{
 			Usage:       "create the process in the UVM with a TTY enabled",
 			Destination: &lcowUseTerminal,
 		},
+		cli.StringFlag{
+			Name:  mountSCSIArgName,
+			Usage: "comma separated VHDs to be mounted as SCSI drives",
+		},
 	},
 	Action: func(c *cli.Context) error {
 		runMany(c, func(id string) error {
-			options := uvm.NewDefaultOptionsLCOW(id, "")
+			options := uvmpkg.NewDefaultOptionsLCOW(id, "")
 			setGlobalOptions(c, options.Options)
 			useGcs := c.GlobalBool(gcsArgName)
 			options.UseGuestConnection = useGcs
@@ -93,11 +100,11 @@ var lcowCommand = cli.Command{
 			if c.IsSet(rootFSTypeArgName) {
 				switch strings.ToLower(c.String(rootFSTypeArgName)) {
 				case "initrd":
-					options.RootFSFile = uvm.InitrdFile
-					options.PreferredRootFSType = uvm.PreferredRootFSTypeInitRd
+					options.RootFSFile = uvmpkg.InitrdFile
+					options.PreferredRootFSType = uvmpkg.PreferredRootFSTypeInitRd
 				case "vhd":
-					options.RootFSFile = uvm.VhdFile
-					options.PreferredRootFSType = uvm.PreferredRootFSTypeVHD
+					options.RootFSFile = uvmpkg.VhdFile
+					options.PreferredRootFSType = uvmpkg.PreferredRootFSTypeVHD
 				default:
 					logrus.Fatalf("Unrecognized value '%s' for option %s", c.String(rootFSTypeArgName), rootFSTypeArgName)
 				}
@@ -124,7 +131,7 @@ var lcowCommand = cli.Command{
 				if c.IsSet(outputHandlingArgName) {
 					switch strings.ToLower(c.String(outputHandlingArgName)) {
 					case "stdout":
-						options.OutputHandler = uvm.OutputHandler(func(r io.Reader) {
+						options.OutputHandler = uvmpkg.OutputHandler(func(r io.Reader) {
 							_, _ = io.Copy(os.Stdout, r)
 						})
 					default:
@@ -146,8 +153,8 @@ var lcowCommand = cli.Command{
 	},
 }
 
-func runLCOW(ctx context.Context, options *uvm.OptionsLCOW, c *cli.Context) error {
-	uvm, err := uvm.CreateLCOW(ctx, options)
+func runLCOW(ctx context.Context, options *uvmpkg.OptionsLCOW, c *cli.Context) error {
+	uvm, err := uvmpkg.CreateLCOW(ctx, options)
 	if err != nil {
 		return err
 	}
@@ -155,6 +162,29 @@ func runLCOW(ctx context.Context, options *uvm.OptionsLCOW, c *cli.Context) erro
 
 	if err := uvm.Start(ctx); err != nil {
 		return err
+	}
+
+	if c.IsSet(mountSCSIArgName) {
+		paths := strings.Split(c.String(mountSCSIArgName), ",")
+		var scsiDevices []*uvmpkg.SCSIMount
+		for i, p := range paths {
+			uvmPath := fmt.Sprintf("/mounts/scsi-%d", i)
+			if c.IsSet(noGuestMountArgName) {
+				uvmPath = ""
+			}
+			scsiDev, err := uvm.AddSCSI(ctx, p, uvmPath, true, false, []string{"ro"}, uvmpkg.VMAccessTypeIndividual)
+			if err != nil {
+				logrus.Errorf("failed to add SCSI device: %s", err)
+			}
+			scsiDevices = append(scsiDevices, scsiDev)
+		}
+		defer func() {
+			for _, scsiDev := range scsiDevices {
+				if err := uvm.RemoveSCSI(ctx, scsiDev.HostPath); err != nil {
+					logrus.Errorf("failed to cleanup SCSI device: %s", err)
+				}
+			}
+		}()
 	}
 
 	if options.UseGuestConnection {
@@ -169,7 +199,7 @@ func runLCOW(ctx context.Context, options *uvm.OptionsLCOW, c *cli.Context) erro
 	return uvm.Wait()
 }
 
-func execViaGcs(vm *uvm.UtilityVM, c *cli.Context) error {
+func execViaGcs(vm *uvmpkg.UtilityVM, c *cli.Context) error {
 	cmd := cmd.Command(vm, "/bin/sh", "-c", c.String(execCommandLineArgName))
 	cmd.Log = logrus.NewEntry(logrus.StandardLogger())
 	if lcowUseTerminal {

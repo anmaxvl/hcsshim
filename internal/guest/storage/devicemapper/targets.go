@@ -44,6 +44,7 @@ func CreateZeroSectorLinearTarget(ctx context.Context, devPath, devName string, 
 // start|     |    |  data_dev |  data_block | #blocks | hash_alg      root_digest                salt
 //     size   |  version    hash_dev         |     hash_offset
 //          target                       hash_block
+// 0 161160 verity 1 /dev/sda /dev/sdb 4096 4096 20145 1 sha256 118ab2f27dbc8270469ac15e301c3ad552df4244440c923ef6a5b5fd2ead5b47 0000000000000000000000000000000000000000000000000000000000000000
 func CreateVerityTarget(ctx context.Context, devPath, devName string, verityInfo *prot.DeviceVerityInfo) (_ string, err error) {
 	_, span := trace.StartSpan(ctx, "devicemapper::CreateVerityTarget")
 	defer span.End()
@@ -51,13 +52,18 @@ func CreateVerityTarget(ctx context.Context, devPath, devName string, verityInfo
 
 	dmBlocks := verityInfo.Ext4SizeInBytes / blockSize
 	dataBlocks := verityInfo.Ext4SizeInBytes / int64(verityInfo.BlockSize)
+	hashDevPath := devPath
 	hashOffsetBlocks := dataBlocks
+	if verityInfo.DevicePath != "" {
+		hashDevPath = verityInfo.DevicePath
+		hashOffsetBlocks = 0
+	}
 	if verityInfo.SuperBlock {
 		hashOffsetBlocks++
 	}
 	hashes := fmt.Sprintf("%s %s %s", verityInfo.Algorithm, verityInfo.RootDigest, verityInfo.Salt)
 	blkInfo := fmt.Sprintf("%d %d %d %d", verityInfo.BlockSize, verityInfo.BlockSize, dataBlocks, hashOffsetBlocks)
-	devices := fmt.Sprintf("%s %s", devPath, devPath)
+	devices := fmt.Sprintf("%s %s", devPath, hashDevPath)
 
 	verityTarget := Target{
 		SectorStart:    0,

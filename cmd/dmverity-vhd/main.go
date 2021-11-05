@@ -119,7 +119,7 @@ var createVHDCommand = cli.Command{
 		},
 		cli.BoolFlag{
 			Name:  hashDeviceVhdFlag + ",hdv",
-			Usage: "Optional: save hash-device as a VHD",
+			Usage: "Optional: write merkle tree as a separate VHD",
 		},
 	},
 	Action: func(ctx *cli.Context) error {

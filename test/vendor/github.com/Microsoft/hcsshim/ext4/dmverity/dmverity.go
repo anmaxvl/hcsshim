@@ -83,8 +83,14 @@ func MerkleTree(r io.Reader) ([]byte, error) {
 		nextLevel := bytes.NewBuffer(make([]byte, 0))
 		for {
 			block := make([]byte, blockSize)
-			if _, err := io.ReadFull(currentLevel, block); err != nil {
+			if n, err := io.ReadFull(currentLevel, block); err != nil {
 				if err == io.EOF {
+					break
+				}
+				// TODO: This is a hack to avoid dealing with VHD footers for now. We need to properly fix this by
+				//   potentially wrapping MerkleTree with another function which is VHD footer aware and can ignore
+				//   this particular error.
+				if n == 512 && err == io.ErrUnexpectedEOF {
 					break
 				}
 				return nil, errors.Wrap(err, "failed to read data block")

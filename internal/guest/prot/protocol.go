@@ -807,6 +807,7 @@ type DeviceMappingInfo struct {
 // The assumption is that the hash device is the same as data device with
 // verity data appended in the end.
 type DeviceVerityInfo struct {
+	DevicePath      string
 	Ext4SizeInBytes int64
 	Version         int
 	Algorithm       string

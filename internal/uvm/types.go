@@ -139,4 +139,7 @@ type UtilityVM struct {
 	// noInheritHostTimezone specifies whether to not inherit the hosts timezone for the UVM. UTC will be set as the default instead.
 	// This only applies for WCOW.
 	noInheritHostTimezone bool
+
+	// hashDevices is a mapping between container layer and its corresponding hash device location in the UVM
+	hashDevices map[string]*SCSIMount
 }
