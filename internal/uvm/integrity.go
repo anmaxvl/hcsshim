@@ -82,7 +82,7 @@ func (uvm *UtilityVM) CreateHashDevice(ctx context.Context, layerPath string) (h
 	}
 	tmpFile.Close()
 
-	if err := security.GrantVmGroupAccess(hashDevPath); err != nil {
+	if err := security.GrantVmGroupAccess(tmpFile.Name()); err != nil {
 		return "", fmt.Errorf("failed to grant vm group access on hash device: %s", hashDevPath)
 	}
 
@@ -90,7 +90,7 @@ func (uvm *UtilityVM) CreateHashDevice(ctx context.Context, layerPath string) (h
 		return hashDevPath, nil
 	}
 	if err := os.Rename(tmpFile.Name(), hashDevPath); err != nil {
-		return
+		return "", errors.Wrapf(err, "failed to rename hash device VHD")
 	}
 	log.G(ctx).WithField("hashDevPath", hashDevPath).Debug("created hash device")
 	return
