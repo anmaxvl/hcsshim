@@ -5,6 +5,7 @@ package prot
 
 import (
 	"encoding/json"
+	"github.com/Microsoft/hcsshim/internal/protocol"
 	"strconv"
 
 	"github.com/Microsoft/hcsshim/internal/guest/commonutils"
@@ -770,13 +771,13 @@ type MappedVirtualDisk struct {
 // MappedVirtualDiskV2 represents a disk on the host which is mapped into a
 // directory in the guest in the V2 schema.
 type MappedVirtualDiskV2 struct {
-	MountPath  string            `json:",omitempty"`
-	Lun        uint8             `json:",omitempty"`
-	Controller uint8             `json:",omitempty"`
-	ReadOnly   bool              `json:",omitempty"`
-	Encrypted  bool              `json:",omitempty"`
-	Options    []string          `json:",omitempty"`
-	VerityInfo *DeviceVerityInfo `json:",omitempty"`
+	MountPath  string               `json:",omitempty"`
+	Lun        uint8                `json:",omitempty"`
+	Controller uint8                `json:",omitempty"`
+	ReadOnly   bool                 `json:",omitempty"`
+	Encrypted  bool                 `json:",omitempty"`
+	Options    []string             `json:",omitempty"`
+	HashDevice *protocol.HashDevice `json:",omitempty"`
 }
 
 // MappedDirectory represents a directory on the host which is mapped to a
@@ -823,8 +824,8 @@ type MappedVPMemDeviceV2 struct {
 	DeviceNumber uint32 `json:",omitempty"`
 	MountPath    string `json:",omitempty"`
 	// MappingInfo is used when multiple devices are mapped onto a single VPMem device
-	MappingInfo *DeviceMappingInfo `json:",omitempty"`
-	VerityInfo  *DeviceVerityInfo  `json:",omitempty"`
+	MappingInfo *DeviceMappingInfo   `json:",omitempty"`
+	HashDevice  *protocol.HashDevice `json:",omitempty"`
 }
 
 type MappedVPCIDeviceV2 struct {

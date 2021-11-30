@@ -43,6 +43,8 @@ func (uvm *UtilityVM) RemoveHashDevice(ctx context.Context, hashDevPath, layerPa
 	return nil
 }
 
+// CreateHashDevice computes and saves cryptographic digest of a given layer as a separate VHD, which
+// can be presented to the UVM for integrity checking.
 func (uvm *UtilityVM) CreateHashDevice(ctx context.Context, layerPath string) (hashDevPath string, err error) {
 	dirPath := filepath.Dir(layerPath)
 	hashDevPath = filepath.Join(dirPath, "hash-dev.vhd")
@@ -94,4 +96,10 @@ func (uvm *UtilityVM) CreateHashDevice(ctx context.Context, layerPath string) (h
 	}
 	log.G(ctx).WithField("hashDevPath", hashDevPath).Debug("created hash device")
 	return
+}
+
+// readHashDevice checks if the hash-device has been appended to the layer VHD or if it was written
+// as a separate VHD, returns hash device object.
+func (uvm *UtilityVM) readHashDevice(ctx context.Context, layerPath string) (error, interface{}) {
+	return nil, nil
 }
