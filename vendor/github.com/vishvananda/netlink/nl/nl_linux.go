@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netns"
 	"golang.org/x/sys/unix"
 )
@@ -422,6 +423,7 @@ func (req *NetlinkRequest) Execute(sockType int, resType uint16) ([][]byte, erro
 	sharedSocket := s != nil
 
 	if s == nil {
+		logrus.Debug("NetlinkRequest.Execute getNetlinkSocket")
 		s, err = getNetlinkSocket(sockType)
 		if err != nil {
 			return nil, err
@@ -432,10 +434,12 @@ func (req *NetlinkRequest) Execute(sockType int, resType uint16) ([][]byte, erro
 		defer s.Unlock()
 	}
 
+	logrus.Debug("NetlinkRequest.Execute s.Send(req)")
 	if err := s.Send(req); err != nil {
 		return nil, err
 	}
 
+	logrus.Debug("NetlinkRequest.Execute s.GetPid()")
 	pid, err := s.GetPid()
 	if err != nil {
 		return nil, err
@@ -445,6 +449,7 @@ func (req *NetlinkRequest) Execute(sockType int, resType uint16) ([][]byte, erro
 
 done:
 	for {
+		logrus.Debug("NetlinkRequest.Execute s.Receive()")
 		msgs, from, err := s.Receive()
 		if err != nil {
 			return nil, err
@@ -636,6 +641,7 @@ func (s *NetlinkSocket) Send(request *NetlinkRequest) error {
 	if fd < 0 {
 		return fmt.Errorf("Send called on a closed socket")
 	}
+	logrus.Debug("NetlinkSocket.Send request.Serialize()")
 	if err := unix.Sendto(fd, request.Serialize(), 0, &s.lsa); err != nil {
 		return err
 	}

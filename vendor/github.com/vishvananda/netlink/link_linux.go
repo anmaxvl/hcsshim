@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink/nl"
 	"github.com/vishvananda/netns"
 	"golang.org/x/sys/unix"
@@ -378,6 +379,7 @@ func (h *Handle) LinkSetMTU(link Link, mtu int) error {
 	data := nl.NewRtAttr(unix.IFLA_MTU, b)
 	req.AddData(data)
 
+	logrus.Debug("LinkSetMTU prior to req.Execute")
 	_, err := req.Execute(unix.NETLINK_ROUTE, 0)
 	return err
 }

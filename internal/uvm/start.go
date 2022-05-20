@@ -86,6 +86,7 @@ func isDisconnectError(err error) bool {
 
 func parseLogrus(vmid string) func(r io.Reader) {
 	return func(r io.Reader) {
+		log.G(context.Background()).Debug("inside parseLogrus")
 		j := json.NewDecoder(r)
 		e := log.L.Dup()
 		fields := e.Data
@@ -95,6 +96,7 @@ func parseLogrus(vmid string) func(r io.Reader) {
 			}
 			gcsEntry := gcsLogEntry{Fields: e.Data}
 			err := j.Decode(&gcsEntry)
+			log.G(context.Background()).Debug("gcsEntry: %v", gcsEntry)
 			if err != nil {
 				// Something went wrong. Read the rest of the data as a single
 				// string and log it at once -- it's probably a GCS panic stack.
@@ -286,6 +288,7 @@ func (uvm *UtilityVM) Start(ctx context.Context) (err error) {
 // context becomes done or the utility VM terminates, the operation will be
 // cancelled (but the listener will still be closed).
 func (uvm *UtilityVM) acceptAndClose(ctx context.Context, l net.Listener) (net.Conn, error) {
+	log.G(ctx).Debug("uvm.acceptAndClose")
 	var conn net.Conn
 	ch := make(chan error)
 	go func() {
