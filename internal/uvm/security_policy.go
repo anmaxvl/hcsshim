@@ -9,6 +9,7 @@ import (
 	hcsschema "github.com/Microsoft/hcsshim/internal/hcs/schema2"
 	"github.com/Microsoft/hcsshim/internal/protocol/guestrequest"
 	"github.com/Microsoft/hcsshim/internal/protocol/guestresource"
+	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
 	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 )
 
@@ -51,4 +52,20 @@ func (uvm *UtilityVM) SetSecurityPolicy(ctx context.Context, enforcer, policy st
 	}
 
 	return nil
+}
+
+// InjectPolicyFragment does something.
+func (uvm *UtilityVM) InjectPolicyFragment(ctx context.Context, frag *ctrdtaskapi.PolicyFragment) error {
+	if uvm.operatingSystem != "linux" {
+		return errNotSupported
+	}
+	mod := &hcsschema.ModifySettingRequest{
+		RequestType: guestrequest.RequestTypeUpdate,
+		GuestRequest: guestrequest.ModificationRequest{
+			ResourceType: guestresource.ResourceTypePolicyFragment,
+			RequestType:  guestrequest.RequestTypeAdd,
+			Settings:     frag,
+		},
+	}
+	return uvm.modify(ctx, mod)
 }

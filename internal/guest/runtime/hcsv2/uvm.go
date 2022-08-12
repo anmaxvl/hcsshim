@@ -29,10 +29,12 @@ import (
 	"github.com/Microsoft/hcsshim/internal/guest/storage/pmem"
 	"github.com/Microsoft/hcsshim/internal/guest/storage/scsi"
 	"github.com/Microsoft/hcsshim/internal/guest/transport"
+	"github.com/Microsoft/hcsshim/internal/log"
 	"github.com/Microsoft/hcsshim/internal/oci"
 	"github.com/Microsoft/hcsshim/internal/protocol/guestrequest"
 	"github.com/Microsoft/hcsshim/internal/protocol/guestresource"
 	"github.com/Microsoft/hcsshim/pkg/annotations"
+	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
 	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 	"github.com/mattn/go-shellwords"
 	"github.com/pkg/errors"
@@ -114,6 +116,12 @@ func (h *Host) SetSecurityPolicy(enforcerType, base64Policy string) error {
 	h.securityPolicyEnforcer = p
 	h.securityPolicyEnforcerSet = true
 
+	return nil
+}
+
+// InjectFragment extends current security policy with additional constraints
+// from the incoming fragment.
+func (*Host) InjectFragment(ctx context.Context, frag *ctrdtaskapi.PolicyFragment) error {
 	return nil
 }
 
@@ -378,6 +386,13 @@ func (h *Host) modifyHostSettings(ctx context.Context, containerID string, req *
 			return errors.New("the request's settings are not of type LCOWSecurityPolicyEnforcer")
 		}
 		return h.SetSecurityPolicy(r.EnforcerType, r.EncodedSecurityPolicy)
+	case guestresource.ResourceTypePolicyFragment:
+		r, ok := req.Settings.(*ctrdtaskapi.PolicyFragment)
+		if !ok {
+			return errors.New("the request settings are not of type PolicyFragment")
+		}
+		log.G(ctx).WithField("settings", r).Debug("policy fragment received in guest")
+		return h.InjectFragment(ctx, r)
 	default:
 		return errors.Errorf("the ResourceType \"%s\" is not supported for UVM", req.ResourceType)
 	}
