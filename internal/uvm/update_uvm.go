@@ -6,8 +6,11 @@ import (
 	"context"
 
 	hcsschema "github.com/Microsoft/hcsshim/internal/hcs/schema2"
+	"github.com/Microsoft/hcsshim/internal/log"
 	"github.com/Microsoft/hcsshim/pkg/annotations"
-	specs "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
+	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/pkg/errors"
 )
 
 func (uvm *UtilityVM) UpdateConstraints(ctx context.Context, data interface{}, annots map[string]string) error {
@@ -42,6 +45,13 @@ func (uvm *UtilityVM) UpdateConstraints(ctx context.Context, data interface{}, a
 				processorLimits.Weight = uint64(*resources.CPU.Shares)
 			}
 		}
+	case *ctrdtaskapi.StringPayload:
+		if _, ok := resources.Annotations[annotations.PolicyFragment]; ok {
+			log.G(ctx).WithField("Payload", resources.Payload).Debug("StringPayload.Payload")
+			// TODO: Make fragment injection request to GCS.
+			return nil
+		}
+		return errors.New("unknown Payload type")
 	}
 
 	if memoryLimitInBytes != nil {
