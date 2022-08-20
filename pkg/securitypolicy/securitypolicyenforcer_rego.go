@@ -61,6 +61,8 @@ type RegoEnforcer struct {
 	compiledModules *ast.Compiler
 }
 
+var _ SecurityPolicyEnforcer = (*RegoEnforcer)(nil)
+
 type securityPolicyInternal struct {
 	AllowAll   bool
 	Containers []*securityPolicyContainer
@@ -394,11 +396,12 @@ func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerP
 	}
 }
 
-func (policy *RegoEnforcer) EnforceCreateContainerPolicy(containerID string,
+func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
+	sandboxID string,
+	containerID string,
 	argList []string,
 	envList []string,
 	workingDir string,
-	sandboxID string,
 	mounts []oci.Mount,
 ) error {
 	policy.mutex.Lock()
