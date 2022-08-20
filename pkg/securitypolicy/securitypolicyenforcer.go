@@ -38,7 +38,7 @@ type SecurityPolicyEnforcer interface {
 	EnforceDeviceMountPolicy(target string, deviceHash string) (err error)
 	EnforceDeviceUnmountPolicy(unmountTarget string) (err error)
 	EnforceOverlayMountPolicy(containerID string, layerPaths []string) (err error)
-	EnforceCreateContainerPolicy(containerID string, argList []string, envList []string, workingDir string, sandboxID string, mounts []oci.Mount) (err error)
+	EnforceCreateContainerPolicy(sandboxID string, containerID string, argList []string, envList []string, workingDir string, mounts []oci.Mount) (err error)
 	ExtendDefaultMounts([]oci.Mount) error
 	EncodedSecurityPolicy() string
 }
@@ -517,11 +517,11 @@ func (pe *StandardSecurityPolicyEnforcer) EnforceOverlayMountPolicy(containerID 
 // understanding of the containers running with a UVM as they come up and map
 // them back to a container definition from the user supplied SecurityPolicy
 func (pe *StandardSecurityPolicyEnforcer) EnforceCreateContainerPolicy(
+	sandboxID string,
 	containerID string,
 	argList []string,
 	envList []string,
 	workingDir string,
-	sandboxID string,
 	mounts []oci.Mount,
 ) (err error) {
 	pe.mutex.Lock()
@@ -846,7 +846,7 @@ func (OpenDoorSecurityPolicyEnforcer) EnforceOverlayMountPolicy(_ string, _ []st
 	return nil
 }
 
-func (OpenDoorSecurityPolicyEnforcer) EnforceCreateContainerPolicy(_ string, _ []string, _ []string, _ string, _ string, _ []oci.Mount) error {
+func (OpenDoorSecurityPolicyEnforcer) EnforceCreateContainerPolicy(_, _ string, _ []string, _ []string, _ string, _ []oci.Mount) error {
 	return nil
 }
 
@@ -880,7 +880,7 @@ func (ClosedDoorSecurityPolicyEnforcer) EnforceOverlayMountPolicy(_ string, _ []
 	return errors.New("creating an overlay fs is denied by policy")
 }
 
-func (ClosedDoorSecurityPolicyEnforcer) EnforceCreateContainerPolicy(_ string, _ []string, _ []string, _ string, _ string, _ []oci.Mount) error {
+func (ClosedDoorSecurityPolicyEnforcer) EnforceCreateContainerPolicy(_, _ string, _ []string, _ []string, _ string, _ []oci.Mount) error {
 	return errors.New("running commands is denied by policy")
 }
 

@@ -284,11 +284,11 @@ func (h *Host) CreateContainer(ctx context.Context, id string, settings *prot.VM
 	}
 
 	err = h.securityPolicyEnforcer.EnforceCreateContainerPolicy(
+		sandboxID,
 		id,
 		settings.OCISpecification.Process.Args,
 		settings.OCISpecification.Process.Env,
 		settings.OCISpecification.Process.Cwd,
-		sandboxID,
 		settings.OCISpecification.Mounts,
 	)
 	if err != nil {
