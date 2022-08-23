@@ -20,7 +20,7 @@ import (
 type createEnforcerFunc func(_ SecurityPolicyState, criMounts, criPrivilegedMounts []oci.Mount) (SecurityPolicyEnforcer, error)
 
 const (
-	allowAllEnforcer = "allow_all"
+	openDoorEnforcer = "open_door"
 	standardEnforcer = "standard"
 )
 
@@ -30,7 +30,7 @@ var (
 )
 
 func init() {
-	registeredEnforcers[allowAllEnforcer] = createAllowAllEnforcer
+	registeredEnforcers[openDoorEnforcer] = createOpenDoorEnforcer
 	registeredEnforcers[standardEnforcer] = createStandardEnforcer
 }
 
@@ -45,10 +45,10 @@ type SecurityPolicyEnforcer interface {
 
 // createAllowAllEnforcer creates and returns OpenDoorSecurityPolicyEnforcer instance.
 // Both AllowAll and Containers cannot be set at the same time.
-func createAllowAllEnforcer(state SecurityPolicyState, _, _ []oci.Mount) (SecurityPolicyEnforcer, error) {
+func createOpenDoorEnforcer(state SecurityPolicyState, _, _ []oci.Mount) (SecurityPolicyEnforcer, error) {
 	policyContainers := state.SecurityPolicy.Containers
 	if !state.AllowAll || policyContainers.Length > 0 || len(policyContainers.Elements) > 0 {
-		return nil, ErrInvalidAllowAllPolicy
+		return nil, ErrInvalidOpenDoorPolicy
 	}
 	return &OpenDoorSecurityPolicyEnforcer{
 		encodedSecurityPolicy: state.EncodedSecurityPolicy.SecurityPolicy,
@@ -92,7 +92,7 @@ func CreateSecurityPolicyEnforcer(
 ) (SecurityPolicyEnforcer, error) {
 	if enforcer == "" {
 		if state.SecurityPolicy.AllowAll {
-			enforcer = allowAllEnforcer
+			enforcer = openDoorEnforcer
 		} else {
 			enforcer = defaultEnforcer
 		}
