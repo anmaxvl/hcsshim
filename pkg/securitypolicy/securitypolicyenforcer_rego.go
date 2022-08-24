@@ -14,11 +14,13 @@ import (
 
 	"github.com/Microsoft/hcsshim/internal/guest/spec"
 	"github.com/Microsoft/hcsshim/internal/guestpath"
+	"github.com/Microsoft/hcsshim/internal/log"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 	"github.com/open-policy-agent/opa/storage/inmem"
 	"github.com/open-policy-agent/opa/topdown"
 	oci "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/sirupsen/logrus"
 )
 
 const regoEnforcer = "rego"
@@ -263,11 +265,14 @@ func newRegoPolicyFromInternal(securityPolicy *securityPolicyInternal, defaultMo
 		return nil, fmt.Errorf("failed to convert json to rego: %w", err)
 	}
 
+	defaultMountData := make([]interface{}, 0, len(defaultMounts))
+	privilegedMountData := make([]interface{}, 0, len(privilegedMounts))
 	policy.data = map[string]interface{}{
-		"started":         []string{},
-		"defaultMounts":   []interface{}{},
-		"sandboxPrefix":   guestpath.SandboxMountPrefix,
-		"hugePagesPrefix": guestpath.HugePagesMountPrefix,
+		"started":          []string{},
+		"defaultMounts":    appendMountData(defaultMountData, defaultMounts),
+		"privilegedMounts": appendMountData(privilegedMountData, privilegedMounts),
+		"sandboxPrefix":    guestpath.SandboxMountPrefix,
+		"hugePagesPrefix":  guestpath.HugePagesMountPrefix,
 	}
 	policy.mutex = new(sync.Mutex)
 	policy.base64policy = ""
@@ -277,9 +282,6 @@ func newRegoPolicyFromInternal(securityPolicy *securityPolicyInternal, defaultMo
 		"objects.rego":   policy.objects,
 		"framework.rego": FrameworkCode,
 	}
-
-	policy.ExtendDefaultMounts(defaultMounts)
-	policy.ExtendDefaultMounts(privilegedMounts)
 
 	// TODO temporary hack for debugging policies until GCS logging design
 	// and implementation is finalized. This option should be changed to
@@ -312,14 +314,15 @@ func (policy RegoEnforcer) Query(input map[string]interface{}) (rego.ResultSet, 
 	ctx := context.Background()
 	results, err := query.Eval(ctx)
 	if err != nil {
-		fmt.Println("Policy", policy.objects)
-		fmt.Println(err)
+		log.G(ctx).WithError(err).WithFields(logrus.Fields{
+			"Policy": policy.objects,
+		})
 		return results, err
 	}
 
 	output := buf.String()
 	if len(output) > 0 {
-		fmt.Println(output)
+		log.G(ctx).Debug(output)
 	}
 
 	return results, nil
@@ -339,20 +342,24 @@ func (policy *RegoEnforcer) EnforceDeviceMountPolicy(target string, deviceHash s
 		return err
 	}
 
-	if result.Allowed() {
-		if devices, found := policy.data["devices"]; found {
-			deviceMap := devices.(map[string]string)
-			if _, e := deviceMap[target]; e {
-				return fmt.Errorf("device %s already mounted", target)
-			}
-			deviceMap[target] = deviceHash
-		} else {
-			policy.data["devices"] = map[string]string{target: deviceHash}
-		}
-		return nil
-	} else {
+	if !result.Allowed() {
 		return errors.New("device mount not allowed by policy")
 	}
+
+	var deviceMap map[string]string
+	if devices, found := policy.data["devices"]; found {
+		deviceMap = devices.(map[string]string)
+	} else {
+		deviceMap = map[string]string{}
+		policy.data["devices"] = deviceMap
+	}
+
+	if _, found := deviceMap[target]; found {
+		return fmt.Errorf("device %s already mounted", target)
+	}
+
+	deviceMap[target] = deviceHash
+	return nil
 }
 
 func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerPaths []string) error {
@@ -369,31 +376,29 @@ func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerP
 		return err
 	}
 
-	if result.Allowed() {
-		// we store the mapping of container ID -> layerPaths for later
-		// use in EnforceCreateContainerPolicy here.
-		if containers, found := policy.data["containers"]; found {
-			containerMap := containers.(map[string]interface{})
-			if _, found := containerMap[containerID]; found {
-				return fmt.Errorf("container %s already mounted", containerID)
-			} else {
-				containerMap[containerID] = map[string]interface{}{
-					"containerID": containerID,
-					"layerPaths":  layerPaths,
-				}
-			}
-		} else {
-			policy.data["containers"] = map[string]interface{}{
-				containerID: map[string]interface{}{
-					"containerID": containerID,
-					"layerPaths":  layerPaths,
-				},
-			}
-		}
-		return nil
-	} else {
+	if !result.Allowed() {
 		return errors.New("overlay mount not allowed by policy")
 	}
+
+	// we store the mapping of container ID -> layerPaths for later
+	// use in EnforceCreateContainerPolicy here.
+	var containerMap map[string]interface{}
+	if containers, found := policy.data["containers"]; found {
+		containerMap = containers.(map[string]interface{})
+	} else {
+		containerMap = make(map[string]interface{})
+		policy.data["containers"] = containerMap
+	}
+
+	if _, found := containerMap[containerID]; found {
+		return fmt.Errorf("container %s already mounted", containerID)
+	}
+
+	containerMap[containerID] = map[string]interface{}{
+		"containerID": containerID,
+		"layerPaths":  layerPaths,
+	}
+	return nil
 }
 
 func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
@@ -474,20 +479,25 @@ func (policy *RegoEnforcer) EnforceDeviceUnmountPolicy(unmountTarget string) err
 	return nil
 }
 
-func (policy *RegoEnforcer) ExtendDefaultMounts(mounts []oci.Mount) error {
-	policy.mutex.Lock()
-	defer policy.mutex.Unlock()
-
-	defaultMounts := policy.data["defaultMounts"].([]interface{})
+func appendMountData(mountData []interface{}, mounts []oci.Mount) []interface{} {
 	for _, mount := range mounts {
-		defaultMounts = append(defaultMounts, map[string]interface{}{
+		mountData = append(mountData, map[string]interface{}{
 			"destination": mount.Destination,
 			"source":      mount.Source,
 			"options":     mount.Options,
 			"type":        mount.Type,
 		})
 	}
-	policy.data["defaultMounts"] = defaultMounts
+
+	return mountData
+}
+
+func (policy *RegoEnforcer) ExtendDefaultMounts(mounts []oci.Mount) error {
+	policy.mutex.Lock()
+	defer policy.mutex.Unlock()
+
+	defaultMounts := policy.data["defaultMounts"].([]interface{})
+	policy.data["defaultMounts"] = appendMountData(defaultMounts, mounts)
 	return nil
 }
 

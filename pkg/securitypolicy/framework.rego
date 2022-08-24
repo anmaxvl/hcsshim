@@ -102,6 +102,12 @@ mount_ok(container, mount) {
     mountConstraint_ok(constraint, mount)
 }
 
+mount_ok(container, mount) {
+    container.allow_elevated
+    some constraint in data.privilegedMounts
+    mountConstraint_ok(constraint, mount)
+}
+
 mountList_ok(container) {
     every mount in input.mounts {
         mount_ok(container, mount)

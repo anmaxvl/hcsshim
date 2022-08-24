@@ -443,7 +443,7 @@ func Test_Rego_EnforceEnvironmentVariablePolicy_Re2Match(t *testing.T) {
 
 		container.EnvRules = append(container.EnvRules, re2MatchRule)
 
-		tc, err := setupRegoCreateContainerTest(gc, container)
+		tc, err := setupRegoCreateContainerTest(gc, container, false)
 		if err != nil {
 			t.Error(err)
 			return false
@@ -819,6 +819,35 @@ func Test_Rego_MountPolicy_BadOption(t *testing.T) {
 	}
 }
 
+func Test_Rego_MountPolicy_MountPrivilegedWhenNotAllowed(t *testing.T) {
+	f := func(p *generatedContainers) bool {
+		tc, err := setupRegoPrivilegedMountTest(p)
+		if err != nil {
+			t.Error(err)
+			return false
+		}
+
+		mindex := randMinMax(testRand, 0, int32(len(tc.mounts)-1))
+		mountToChange := tc.mounts[mindex]
+		oindex := randMinMax(testRand, 0, int32(len(mountToChange.Options)-1))
+		tc.mounts[mindex].Options[oindex] = randString(testRand, maxGeneratedMountOptionLength)
+
+		err = tc.policy.EnforceCreateContainerPolicy(tc.sandboxID, tc.containerID, tc.argList, tc.envList, tc.workingDir, tc.mounts)
+
+		// not getting an error means something is broken
+		if err == nil {
+			t.Error("We tried to mount a privileged mount when not allowed and it didn't result in an error")
+			return false
+		}
+
+		return strings.Contains(err.Error(), "invalid mount list")
+	}
+
+	if err := quick.Check(f, &quick.Config{MaxCount: 250}); err != nil {
+		t.Errorf("Test_Rego_MountPolicy_BadOption: %v", err)
+	}
+}
+
 //
 // Setup and "fixtures" follow...
 //
@@ -920,10 +949,15 @@ type regoContainerTestConfig struct {
 
 func setupSimpleRegoCreateContainerTest(gc *generatedContainers) (tc *regoContainerTestConfig, err error) {
 	c := selectContainerFromContainers(gc, testRand)
-	return setupRegoCreateContainerTest(gc, c)
+	return setupRegoCreateContainerTest(gc, c, false)
 }
 
-func setupRegoCreateContainerTest(gc *generatedContainers, testContainer *securityPolicyContainer) (tc *regoContainerTestConfig, err error) {
+func setupRegoPrivilegedMountTest(gc *generatedContainers) (tc *regoContainerTestConfig, err error) {
+	c := selectContainerFromContainers(gc, testRand)
+	return setupRegoCreateContainerTest(gc, c, true)
+}
+
+func setupRegoCreateContainerTest(gc *generatedContainers, testContainer *securityPolicyContainer, privilegedError bool) (tc *regoContainerTestConfig, err error) {
 	securityPolicy := newSecurityPolicyInternal(gc.containers)
 	defaultMounts := generateMounts(testRand)
 	privilegedMounts := generateMounts(testRand)
@@ -945,7 +979,11 @@ func setupRegoCreateContainerTest(gc *generatedContainers, testContainer *securi
 
 	mounts := testContainer.Mounts
 	mounts = append(mounts, defaultMounts...)
-	if testContainer.AllowElevated {
+	if privilegedError {
+		testContainer.AllowElevated = false
+	}
+
+	if testContainer.AllowElevated || privilegedError {
 		mounts = append(mounts, privilegedMounts...)
 	}
 	mountSpec := buildMountSpecFromMountArray(mounts, sandboxID, testRand)
