@@ -14,7 +14,6 @@ import (
 	"testing/quick"
 	"time"
 
-	"github.com/Microsoft/hcsshim/internal/guest/spec"
 	"github.com/Microsoft/hcsshim/internal/guestpath"
 	"github.com/google/go-cmp/cmp"
 	oci "github.com/opencontainers/runtime-spec/specs-go"
@@ -1070,8 +1069,6 @@ func buildMountSpecFromMountArray(mounts []mountInternal, sandboxID string, r *r
 
 	// Select some number of the valid, matching rules to be environment
 	// variable
-	sandboxDir := spec.SandboxMountsDir(sandboxID)
-	hugePagesDir := spec.HugePagesMountsDir(sandboxID)
 	numberOfMounts := int32(len(mounts))
 	numberOfMatches := randMinMax(r, 1, numberOfMounts)
 	usedIndexes := map[int]struct{}{}
@@ -1097,8 +1094,8 @@ func buildMountSpecFromMountArray(mounts []mountInternal, sandboxID string, r *r
 		}
 
 		mount := mounts[anIndex]
-		source := strings.Replace(mount.Source, guestpath.SandboxMountPrefix, sandboxDir, 1)
-		source = strings.Replace(source, guestpath.HugePagesMountPrefix, hugePagesDir, 1)
+
+		source := substituteUVMPath(sandboxID, mount).Source
 		mountSpec.Mounts = append(mountSpec.Mounts, oci.Mount{
 			Source:      source,
 			Destination: mount.Destination,
