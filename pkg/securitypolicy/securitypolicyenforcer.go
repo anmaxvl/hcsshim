@@ -729,9 +729,6 @@ func (pe *StandardSecurityPolicyEnforcer) ExtendDefaultMounts(defaultMounts []oc
 // the enforcement, the method also narrows down possible container IDs with
 // the same overlay.
 func (pe *StandardSecurityPolicyEnforcer) enforceMountPolicy(sandboxID, containerID string, mounts []oci.Mount) (err error) {
-	pe.mutex.Lock()
-	defer pe.mutex.Unlock()
-
 	possibleIndices := pe.possibleIndicesForID(containerID)
 
 	for _, mount := range mounts {
