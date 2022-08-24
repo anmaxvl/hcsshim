@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -355,7 +356,12 @@ func (policy *RegoEnforcer) EnforceDeviceMountPolicy(target string, deviceHash s
 	}
 
 	if _, found := deviceMap[target]; found {
-		return fmt.Errorf("device %s already mounted", target)
+		input_json, err := json.Marshal(input)
+		if err != nil {
+			return fmt.Errorf("Unable to marshal the Rego input data.")
+		}
+
+		return fmt.Errorf("device %s already mounted.\ninput: %s", target, string(input_json))
 	}
 
 	deviceMap[target] = deviceHash
@@ -377,7 +383,12 @@ func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerP
 	}
 
 	if !result.Allowed() {
-		return errors.New("overlay mount not allowed by policy")
+		input_json, err := json.Marshal(input)
+		if err != nil {
+			return fmt.Errorf("Unable to marshal the Rego input data.")
+		}
+
+		return fmt.Errorf("overlay mount not allowed by policy.\ninput: %s", string(input_json))
 	}
 
 	// we store the mapping of container ID -> layerPaths for later
@@ -391,7 +402,12 @@ func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerP
 	}
 
 	if _, found := containerMap[containerID]; found {
-		return fmt.Errorf("container %s already mounted", containerID)
+		input_json, err := json.Marshal(input)
+		if err != nil {
+			return fmt.Errorf("Unable to marshal the Rego input data.")
+		}
+
+		return fmt.Errorf("container %s already mounted.\ninput: %s", containerID, string(input_json))
 	}
 
 	containerMap[containerID] = map[string]interface{}{
@@ -454,6 +470,11 @@ func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
 		containerInfo["workingDir"] = workingDir
 		return nil
 	} else {
+		input_json, err := json.Marshal(input)
+		if err != nil {
+			return fmt.Errorf("Unable to marshal the Rego input data.")
+		}
+
 		input["name"] = "reason"
 		input["rule"] = "create_container"
 		result, err := policy.Query(input)
@@ -465,7 +486,7 @@ func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
 		for _, reason := range result[0].Expressions[0].Value.([]interface{}) {
 			reasons = append(reasons, reason.(string))
 		}
-		return fmt.Errorf("container creation not allowed by policy. Reasons: [%s]", strings.Join(reasons, ","))
+		return fmt.Errorf("container creation not allowed by policy. Reasons: [%s].\nInput: %s", strings.Join(reasons, ","), string(input_json))
 	}
 }
 
