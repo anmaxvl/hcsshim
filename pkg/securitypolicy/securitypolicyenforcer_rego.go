@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -417,6 +418,16 @@ func (policy *RegoEnforcer) EnforceOverlayMountPolicy(containerID string, layerP
 	return nil
 }
 
+// Rego does not have a way to determine the OS path separator
+// so we append it via these methods.
+func sandboxMountsDir(sandboxID string) string {
+	return fmt.Sprintf("%s%c", spec.SandboxMountsDir(sandboxID), os.PathSeparator)
+}
+
+func hugePagesMountsDir(sandboxID string) string {
+	return fmt.Sprintf("%s%c", spec.HugePagesMountsDir(sandboxID), os.PathSeparator)
+}
+
 func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
 	sandboxID string,
 	containerID string,
@@ -447,8 +458,8 @@ func (policy *RegoEnforcer) EnforceCreateContainerPolicy(
 		"argList":      argList,
 		"envList":      envList,
 		"workingDir":   workingDir,
-		"sandboxDir":   spec.SandboxMountsDir(sandboxID),
-		"hugePagesDir": spec.HugePagesMountsDir(sandboxID),
+		"sandboxDir":   sandboxMountsDir(sandboxID),
+		"hugePagesDir": hugePagesMountsDir(sandboxID),
 		"mounts":       mounts,
 	}
 
