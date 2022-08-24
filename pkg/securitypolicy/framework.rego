@@ -52,7 +52,7 @@ workingDirectory_ok(container) {
 
 default create_container := false
 create_container := true {
-	not input.containerID in data.started
+    not input.containerID in data.started
     some container in data.policy.containers
     layerPaths_ok(container)
     command_ok(container)
