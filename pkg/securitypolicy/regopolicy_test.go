@@ -819,6 +819,44 @@ func Test_Rego_MountPolicy_BadOption(t *testing.T) {
 	}
 }
 
+func Test_Rego_MountPolicy_BadOptionOrder(t *testing.T) {
+	f := func(p *generatedContainers) bool {
+		tc, err := setupSimpleRegoCreateContainerTest(p)
+		if err != nil {
+			t.Error(err)
+			return false
+		}
+
+		mindex := randMinMax(testRand, 0, int32(len(tc.mounts)-1))
+		mountToChange := tc.mounts[mindex]
+		length := len(mountToChange.Options)
+		if length == 1 {
+			return true
+		}
+
+		oindex0 := int(randMinMax(testRand, 0, int32(length/2-1)))
+		oindex1 := length - oindex0 - 1
+		option0 := mountToChange.Options[oindex0]
+		option1 := mountToChange.Options[oindex1]
+		tc.mounts[mindex].Options[oindex0] = option1
+		tc.mounts[mindex].Options[oindex1] = option0
+
+		err = tc.policy.EnforceCreateContainerPolicy(tc.sandboxID, tc.containerID, tc.argList, tc.envList, tc.workingDir, tc.mounts)
+
+		// not getting an error means something is broken
+		if err == nil {
+			t.Error("We changed the mount option order and it didn't result in an error")
+			return false
+		}
+
+		return strings.Contains(err.Error(), "invalid mount list")
+	}
+
+	if err := quick.Check(f, &quick.Config{MaxCount: 250}); err != nil {
+		t.Errorf("Test_Rego_MountPolicy_BadOptionOrder: %v", err)
+	}
+}
+
 func Test_Rego_MountPolicy_MountPrivilegedWhenNotAllowed(t *testing.T) {
 	f := func(p *generatedContainers) bool {
 		tc, err := setupRegoPrivilegedMountTest(p)
