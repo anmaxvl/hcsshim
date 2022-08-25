@@ -158,8 +158,15 @@ func Test_Rego_EnforceOverlayMountPolicy_No_Matches(t *testing.T) {
 
 		err = tc.policy.EnforceOverlayMountPolicy(tc.containerID, tc.layers)
 
-		// not getting an error means something is broken
-		return err != nil && strings.Contains(err.Error(), tc.layers[0])
+		if err == nil {
+			return false
+		}
+
+		if len(tc.layers) > 0 && !strings.Contains(err.Error(), tc.layers[0]) {
+			return false
+		}
+
+		return true
 	}
 
 	if err := quick.Check(f, &quick.Config{MaxCount: 250}); err != nil {
