@@ -82,6 +82,7 @@ mountConstraint_ok(constraint, mount) {
     mountSource_ok(constraint.source, mount.source)
     mount.destination != ""
     mount.destination == constraint.destination
+    count(mount.options) == count(constraint.options)
     every option in mount.options {
         some constraintOption in constraint.options
         option == constraintOption
