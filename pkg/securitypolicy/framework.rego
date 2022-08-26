@@ -82,6 +82,9 @@ mountConstraint_ok(constraint, mount) {
     mountSource_ok(constraint.source, mount.source)
     mount.destination != ""
     mount.destination == constraint.destination
+    # the following check is not required (as the following tests will prove this
+    # condition as well), however it will check whether those more expensive
+    # tests need to be performed.
     count(mount.options) == count(constraint.options)
     every option in mount.options {
         some constraintOption in constraint.options
