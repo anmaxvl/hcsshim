@@ -122,6 +122,7 @@ func (h *Host) SetSecurityPolicy(enforcerType, base64Policy string) error {
 // InjectFragment extends current security policy with additional constraints
 // from the incoming fragment.
 func (*Host) InjectFragment(ctx context.Context, frag *ctrdtaskapi.PolicyFragment) error {
+	log.G(ctx).WithField("fragment", fmt.Sprintf("%+v", frag)).Debug("GCS Host.InjectFragment")
 	return nil
 }
 
@@ -397,7 +398,7 @@ func (h *Host) modifyHostSettings(ctx context.Context, containerID string, req *
 		if !ok {
 			return errors.New("the request settings are not of type PolicyFragment")
 		}
-		log.G(ctx).WithField("settings", r).Debug("policy fragment received in guest")
+		log.G(ctx).WithField("fragment", fmt.Sprintf("%+v", r)).Debug("policy fragment received in guest")
 		return h.InjectFragment(ctx, r)
 	default:
 		return errors.Errorf("the ResourceType \"%s\" is not supported for UVM", req.ResourceType)
