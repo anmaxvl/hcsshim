@@ -1261,7 +1261,7 @@ func Test_ExecInUVM_WithPolicy(t *testing.T) {
 func Test_RunPodSandbox_Concurrently(t *testing.T) {
 	requireFeatures(t, featureLCOWIntegrity)
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < *flagNumPods; i++ {
 		t.Run(fmt.Sprintf("ParallelPodRun_%d", i+1), func(t *testing.T) {
 			t.Parallel()
 			client := newTestRuntimeClient(t)
@@ -1295,7 +1295,7 @@ func Test_RunPodSandbox_Concurrently(t *testing.T) {
 			defer func() {
 				stopPodSandbox(t, client, ctx, podID)
 			}()
-			time.Sleep(5 * time.Second)
+			time.Sleep(300 * time.Second)
 		})
 	}
 }

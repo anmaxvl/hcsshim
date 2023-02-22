@@ -100,6 +100,7 @@ var (
 	flagVMServiceBinary       = flag.String("vmservice-binary", "", "Path to a binary implementing the vmservice ttrpc service")
 	flagContainerdServiceName = flag.String("containerd-service-name", "containerd", "Name of the containerd Windows service")
 	flagSevSnp                = flag.Bool("sev-snp", false, "Indicates that the tests are running on hardware with SEV-SNP support")
+	flagNumPods               = flag.Int("num-pods", 5, "Number of pods to run concurrently")
 )
 
 // Features
