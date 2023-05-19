@@ -225,9 +225,17 @@ func ReadDMVerityInfoReader(r io.Reader) (*VerityInfo, error) {
 // writes the result hash device (dm-verity super-block combined with merkle
 // tree) to io.Writer.
 func ComputeAndWriteHashDevice(r io.ReadSeeker, w io.Writer) error {
+	// save current reader position
+	currBytePos, err := r.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return err
+	}
+
+	// reset to the beginning to find the device size
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
+
 	tree, err := MerkleTree(r)
 	if err != nil {
 		return errors.Wrap(err, "failed to build merkle tree")
@@ -235,6 +243,11 @@ func ComputeAndWriteHashDevice(r io.ReadSeeker, w io.Writer) error {
 
 	devSize, err := r.Seek(0, io.SeekEnd)
 	if err != nil {
+		return err
+	}
+
+	// reset reader to initial position
+	if _, err := r.Seek(currBytePos, io.SeekStart); err != nil {
 		return err
 	}
 

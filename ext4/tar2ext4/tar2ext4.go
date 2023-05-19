@@ -228,13 +228,25 @@ func ReadExt4SuperBlock(devicePath string) (*format.SuperBlock, error) {
 //
 // Our goal is to skip the Group 0 padding, read and return the ext4 SuperBlock
 func ReadExt4SuperBlockReadSeeker(rsc io.ReadSeeker) (*format.SuperBlock, error) {
-	if _, err := rsc.Seek(1024, io.SeekStart); err != nil {
+	// save current reader position
+	currBytePos, err := rsc.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := rsc.Seek(1024, io.SeekCurrent); err != nil {
 		return nil, err
 	}
 	var sb format.SuperBlock
 	if err := binary.Read(rsc, binary.LittleEndian, &sb); err != nil {
 		return nil, err
 	}
+
+	// reset the reader to initial position
+	if _, err := rsc.Seek(currBytePos, io.SeekStart); err != nil {
+		return nil, err
+	}
+
 	if sb.Magic != format.SuperBlockMagic {
 		return nil, errors.New("not an ext4 file system")
 	}
