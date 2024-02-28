@@ -105,6 +105,9 @@ type Options struct {
 
 	// 	AdditionalHyperVConfig are extra Hyper-V socket configurations to provide.
 	AdditionalHyperVConfig map[string]hcsschema.HvSocketServiceConfig
+
+	HRMMemoryJobName string
+	HRMCPUJobName    string
 }
 
 // Verifies that the final UVM options are correct and supported.
@@ -182,9 +185,9 @@ func (uvm *UtilityVM) OS() string {
 	return uvm.operatingSystem
 }
 
-func (uvm *UtilityVM) create(ctx context.Context, doc interface{}) error {
+func (uvm *UtilityVM) create(ctx context.Context, doc interface{}, rpOptions *hcs.ResourcePoolOptions) error {
 	uvm.exitCh = make(chan struct{})
-	system, err := hcs.CreateComputeSystem(ctx, uvm.id, doc, nil)
+	system, err := hcs.CreateComputeSystem(ctx, uvm.id, doc, rpOptions)
 	if err != nil {
 		return err
 	}
