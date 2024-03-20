@@ -49,6 +49,8 @@ type Options struct {
 	// commit, set to true.
 	EnableDeferredCommit bool
 
+	ForbidSmallBackingPages bool
+
 	// ProcessorCount sets the number of vCPU's. If `0` will default to platform
 	// default.
 	ProcessorCount int32

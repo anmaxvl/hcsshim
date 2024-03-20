@@ -28,6 +28,11 @@ type Memory2 struct {
 	// the guest operating system).
 	EnableColdDiscardHint bool `json:"EnableColdDiscardHint,omitempty"`
 
+	// ForbidSmallBackingPages if enabled, then backing page chunks smaller than the backing page
+	// size are never used unless the system is under extreme memory pressure. If the backing page
+	// is `Small`, then it is forced to `Large` when this option is enabled.
+	ForbidSmallBackingPages bool `json:"ForbidSmallBackingPages,omitempty"`
+
 	// LowMmioGapInMB is the low MMIO region allocated below 4GB.
 	//
 	// TODO: This is pre-release support in schema 2.3. Need to add build number
