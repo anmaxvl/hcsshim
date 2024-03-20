@@ -130,6 +130,8 @@ const (
 	// MemoryHighMMIOGapInMB indicates the high MMIO gap in MB.
 	MemoryHighMMIOGapInMB = "io.microsoft.virtualmachine.computetopology.memory.highmmiogapinmb"
 
+	MemoryForbidSmallBackingPages = "io.microsoft.virtualmachine.computetopology.memory.forbidsmallbackingpages"
+
 	// ProcessorCount overrides the hypervisor isolated vCPU count set
 	// via the OCI spec.
 	//
