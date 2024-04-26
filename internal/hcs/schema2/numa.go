@@ -13,8 +13,9 @@
 
 package hcsschema
 
-type Topology struct {
-	Memory    *Memory2    `json:"Memory,omitempty"`
-	Processor *Processor2 `json:"Processor,omitempty"`
-	Numa      *Numa       `json:"Numa,omitempty"`
+type Numa struct {
+	VirtualNodeCount       uint8         `json:"VirtualNodeCount,omitempty"`
+	PreferredPhysicalNodes []int64       `json:"PreferredPhysicalNodes,omitempty"`
+	Settings               []NumaSetting `json:"Settings,omitempty"`
+	MaxSizePerNode         uint64        `json:"MaxSizePerNode,omitempty"`
 }

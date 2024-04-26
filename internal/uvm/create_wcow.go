@@ -85,6 +85,11 @@ func prepareConfigDoc(ctx context.Context, uvm *UtilityVM, opts *OptionsWCOW) (*
 	// Align the requested memory size.
 	memorySizeInMB := uvm.normalizeMemorySize(ctx, opts.MemorySizeInMB)
 
+	vmMemoryBackingType := hcsschema.MemoryBackingType_PHYSICAL
+	if opts.AllowOvercommit {
+		vmMemoryBackingType = hcsschema.MemoryBackingType_VIRTUAL
+	}
+
 	// UVM rootfs share is readonly.
 	vsmbOpts := uvm.DefaultVSMBOptions(true)
 	vsmbOpts.TakeBackupPrivilege = true
@@ -156,6 +161,22 @@ func prepareConfigDoc(ctx context.Context, uvm *UtilityVM, opts *OptionsWCOW) (*
 		Limit:  opts.ProcessorLimit,
 		Weight: opts.ProcessorWeight,
 	}
+
+	numa, numaProcessors, err := prepareVNumaTopology(opts.Options)
+	if err != nil {
+		return nil, err
+	}
+
+	if numa != nil {
+		if err := hcsschema.ValidateNumaForVM(numa, vmMemoryBackingType, processor.Count, memorySizeInMB); err != nil {
+			return nil, fmt.Errorf("failed to validate vNUMA settings: %w", err)
+		}
+	}
+
+	if numaProcessors != nil {
+		processor.NumaProcessorsSettings = numaProcessors
+	}
+
 	// We can set a cpu group for the VM at creation time in recent builds.
 	if opts.CPUGroupID != "" {
 		if osversion.Build() < osversion.V21H1 {
@@ -191,6 +212,7 @@ func prepareConfigDoc(ctx context.Context, uvm *UtilityVM, opts *OptionsWCOW) (*
 					HighMMIOGapInMB:      opts.HighMMIOGapInMB,
 				},
 				Processor: processor,
+				Numa:      numa,
 			},
 			Devices: &hcsschema.Devices{
 				HvSocket: &hcsschema.HvSocket2{

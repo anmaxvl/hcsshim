@@ -13,8 +13,9 @@
 
 package hcsschema
 
-type Topology struct {
-	Memory    *Memory2    `json:"Memory,omitempty"`
-	Processor *Processor2 `json:"Processor,omitempty"`
-	Numa      *Numa       `json:"Numa,omitempty"`
+type NumaNodeMemory struct {
+	// Total physical memory on on this physical NUMA node that is consumable by the VMs.
+	TotalConsumableMemoryInPages uint64 `json:"TotalConsumableMemoryInPages,omitempty"`
+	// Currently available physical memory on this physical NUMA node for the VMs.
+	AvailableMemoryInPages uint64 `json:"AvailableMemoryInPages,omitempty"`
 }

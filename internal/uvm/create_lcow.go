@@ -51,7 +51,7 @@ import (
 //
 // Examples of the eventual json are inline as comments by these two functions to show the eventual effect of the code.
 //
-// Note that the schema files, ie the Go objects that represent the json, are generated outside of the local build process.
+// Note that the schema files, ie the Go objects that represent the json, are generated outside the local build process.
 
 type PreferredRootFSType int
 
@@ -605,8 +605,28 @@ func makeLCOWDoc(ctx context.Context, opts *OptionsLCOW, uvm *UtilityVM) (_ *hcs
 		return nil, err
 	}
 
+	numa, numaProcessors, err := prepareVNumaTopology(opts.Options)
+	if err != nil {
+		return nil, err
+	}
+
 	// Align the requested memory size.
 	memorySizeInMB := uvm.normalizeMemorySize(ctx, opts.MemorySizeInMB)
+
+	vmMemoryBackingType := hcsschema.MemoryBackingType_PHYSICAL
+	if opts.AllowOvercommit {
+		vmMemoryBackingType = hcsschema.MemoryBackingType_VIRTUAL
+	}
+
+	if numa != nil {
+		if err := hcsschema.ValidateNumaForVM(numa, vmMemoryBackingType, processor.Count, memorySizeInMB); err != nil {
+			return nil, fmt.Errorf("failed to validate vNUMA settings: %w", err)
+		}
+	}
+
+	if numaProcessors != nil {
+		processor.NumaProcessorsSettings = numaProcessors
+	}
 
 	doc := &hcsschema.ComputeSystem{
 		Owner:                             uvm.owner,
@@ -626,6 +646,7 @@ func makeLCOWDoc(ctx context.Context, opts *OptionsLCOW, uvm *UtilityVM) (_ *hcs
 					HighMMIOGapInMB:       opts.HighMMIOGapInMB,
 				},
 				Processor: processor,
+				Numa:      numa,
 			},
 			Devices: &hcsschema.Devices{
 				HvSocket: &hcsschema.HvSocket2{
