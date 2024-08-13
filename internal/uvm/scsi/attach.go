@@ -12,13 +12,14 @@ import (
 type attachManager struct {
 	m                    sync.Mutex
 	attacher             attacher
+	rescanner            rescanner
 	unplugger            unplugger
 	numControllers       int
 	numLUNsPerController int
 	slots                [][]*attachment
 }
 
-func newAttachManager(attacher attacher, unplugger unplugger, numControllers, numLUNsPerController int, reservedSlots []Slot) *attachManager {
+func newAttachManager(attacher attacher, unplugger unplugger, rescanner rescanner, numControllers, numLUNsPerController int, reservedSlots []Slot) *attachManager {
 	slots := make([][]*attachment, numControllers)
 	for i := range slots {
 		slots[i] = make([]*attachment, numLUNsPerController)
@@ -33,6 +34,7 @@ func newAttachManager(attacher attacher, unplugger unplugger, numControllers, nu
 	return &attachManager{
 		attacher:             attacher,
 		unplugger:            unplugger,
+		rescanner:            rescanner,
 		numControllers:       numControllers,
 		numLUNsPerController: numLUNsPerController,
 		slots:                slots,

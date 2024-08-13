@@ -56,7 +56,7 @@ func NewManager(
 	if hb == nil || gb == nil {
 		return nil, errors.New("host and guest backend must not be nil")
 	}
-	am := newAttachManager(hb, gb, numControllers, numLUNsPerController, reservedSlots)
+	am := newAttachManager(hb, gb, gb, numControllers, numLUNsPerController, reservedSlots)
 	mm := newMountManager(gb, guestMountFmt)
 	return &Manager{am, mm}, nil
 }
@@ -261,6 +261,35 @@ func (m *Manager) AddExtensibleVirtualDisk(
 			evdType:  evdType,
 		},
 		mcInternal)
+}
+
+func (m *Manager) RescanDisk(ctx context.Context, hostPath string, readOnly bool, typ string) error {
+	attachConf := &attachConfig{
+		path:     hostPath,
+		readOnly: readOnly,
+		typ:      typ,
+	}
+
+	if typ == "ExtensibleVirtualDisk" {
+		evdType, path, err := parseExtensibleVirtualDiskPath(hostPath)
+		if err != nil {
+			return err
+		}
+		attachConf.path = path
+		attachConf.evdType = evdType
+	}
+
+	atmnt, existed, err := m.attachManager.trackAttachment(attachConf)
+	if err != nil {
+		return err
+	}
+	defer m.attachManager.untrackAttachment(atmnt)
+
+	if !existed {
+		return fmt.Errorf("disk %s not attached", hostPath)
+	}
+
+	return m.attachManager.rescanner.rescan(ctx, atmnt.controller, atmnt.lun)
 }
 
 func (m *Manager) add(ctx context.Context, attachConfig *attachConfig, mountConfig *mountConfig) (_ *Mount, err error) {

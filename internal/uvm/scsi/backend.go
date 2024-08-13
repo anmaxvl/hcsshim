@@ -29,6 +29,7 @@ type HostBackend interface {
 type GuestBackend interface {
 	mounter
 	unplugger
+	rescanner
 }
 
 // attacher provides the low-level operations for attaching a SCSI device to a VM.
@@ -46,6 +47,10 @@ type mounter interface {
 // unplugger provides the low-level operations for cleanly removing a SCSI device inside the guest OS.
 type unplugger interface {
 	unplug(ctx context.Context, controller, lun uint) error
+}
+
+type rescanner interface {
+	rescan(ctx context.Context, controller, lun uint) error
 }
 
 var _ attacher = &hcsHostBackend{}
@@ -83,6 +88,7 @@ func (hhb *hcsHostBackend) detach(ctx context.Context, controller, lun uint) err
 
 var _ mounter = &bridgeGuestBackend{}
 var _ unplugger = &bridgeGuestBackend{}
+var _ rescanner = &bridgeGuestBackend{}
 
 type bridgeGuestBackend struct {
 	gc     *gcs.GuestConnection
@@ -123,8 +129,17 @@ func (bgb *bridgeGuestBackend) unplug(ctx context.Context, controller, lun uint)
 	return bgb.gc.Modify(ctx, req)
 }
 
+func (bgb *bridgeGuestBackend) rescan(ctx context.Context, controller, lun uint) error {
+	req, err := rescanRequest(controller, lun, bgb.osType)
+	if err != nil {
+		return err
+	}
+	return bgb.gc.Modify(ctx, req)
+}
+
 var _ mounter = &hcsGuestBackend{}
 var _ unplugger = &hcsGuestBackend{}
+var _ rescanner = &hcsGuestBackend{}
 
 type hcsGuestBackend struct {
 	system *hcs.System
@@ -163,6 +178,10 @@ func (hgb *hcsGuestBackend) unplug(ctx context.Context, controller, lun uint) er
 		return nil
 	}
 	return hgb.system.Modify(ctx, &hcsschema.ModifySettingRequest{GuestRequest: req})
+}
+
+func (hgb *hcsGuestBackend) rescan(_ context.Context, _, _ uint) error {
+	return errors.New("rescan not supported for HCS guest backend")
 }
 
 func mountRequest(controller, lun uint, path string, config *mountConfig, osType string) (guestrequest.ModificationRequest, error) {
@@ -239,6 +258,26 @@ func unplugRequest(controller, lun uint, osType string) (guestrequest.Modificati
 		req = guestrequest.ModificationRequest{
 			ResourceType: guestresource.ResourceTypeSCSIDevice,
 			RequestType:  guestrequest.RequestTypeRemove,
+			Settings: guestresource.SCSIDevice{
+				Controller: uint8(controller),
+				Lun:        uint8(lun),
+			},
+		}
+	default:
+		return guestrequest.ModificationRequest{}, fmt.Errorf("unsupported os type: %s", osType)
+	}
+	return req, nil
+}
+
+func rescanRequest(controller, lun uint, osType string) (guestrequest.ModificationRequest, error) {
+	var req guestrequest.ModificationRequest
+	switch osType {
+	case "windows":
+		// Windows doesn't support a resize operation, so treat as no-op.
+	case "linux":
+		req = guestrequest.ModificationRequest{
+			ResourceType: guestresource.ResourceTypeSCSIDevice,
+			RequestType:  guestrequest.RequestTypeUpdate,
 			Settings: guestresource.SCSIDevice{
 				Controller: uint8(controller),
 				Lun:        uint8(lun),

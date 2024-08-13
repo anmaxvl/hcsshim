@@ -1,12 +1,13 @@
 package ctrdtaskapi
 
 import (
-	typeurl "github.com/containerd/typeurl/v2"
+	"github.com/containerd/typeurl/v2"
 )
 
 func init() {
 	typeurl.Register(&PolicyFragment{}, "github.com/Microsoft/hcsshim/pkg/ctrdtaskapi", "PolicyFragment")
 	typeurl.Register(&ContainerMount{}, "github.com/Microsoft/hcsshim/pkg/ctrdtaskapi", "ContainerMount")
+	typeurl.Register(&DiskRescan{}, "github.com/Microsoft/hcsshim/pkg/ctrdtaskapi", "DiskRescan")
 }
 
 type PolicyFragment struct {
@@ -22,4 +23,10 @@ type ContainerMount struct {
 	ContainerPath string
 	ReadOnly      bool
 	Type          string
+}
+
+type DiskRescan struct {
+	HostPath string `json:"host_path,omitempty"`
+	ReadOnly bool   `json:"readonly,omitempty"`
+	Type     string `json:"type,omitempty"`
 }

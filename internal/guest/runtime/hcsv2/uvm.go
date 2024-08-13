@@ -960,6 +960,12 @@ func modifySCSIDevice(
 			return err
 		}
 		return scsi.UnplugDevice(ctx, cNum, msd.Lun)
+	case guestrequest.RequestTypeUpdate: // TODO: consider having a separate RequestType for this, similar to Network?
+		cNum, err := scsi.ActualControllerNumber(ctx, msd.Controller)
+		if err != nil {
+			return err
+		}
+		return scsi.RescanDevice(ctx, cNum, msd.Lun)
 	default:
 		return newInvalidRequestTypeError(rt)
 	}

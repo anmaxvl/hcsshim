@@ -46,6 +46,8 @@ func (uvm *UtilityVM) Update(ctx context.Context, data interface{}, annots map[s
 		}
 	case *ctrdtaskapi.PolicyFragment:
 		return uvm.InjectPolicyFragment(ctx, resources)
+	case *ctrdtaskapi.DiskRescan:
+		return uvm.SCSIManager.RescanDisk(ctx, resources.HostPath, resources.ReadOnly, resources.Type)
 	default:
 		return fmt.Errorf("invalid resource: %+v", resources)
 	}

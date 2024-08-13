@@ -457,6 +457,31 @@ func UnplugDevice(ctx context.Context, controller, lun uint8) (err error) {
 	return nil
 }
 
+func RescanDevice(ctx context.Context, controller, lun uint8) (err error) {
+	_, span := oc.StartSpan(ctx, "scsi::Resize")
+	defer span.End()
+	defer func() { oc.SetSpanStatus(span, err) }()
+
+	span.AddAttributes(
+		trace.Int64Attribute("controller", int64(controller)),
+		trace.Int64Attribute("lun", int64(lun)))
+
+	scsiID := fmt.Sprintf("%d:0:0:%d", controller, lun)
+	f, err := os.OpenFile(filepath.Join(scsiDevicesPath, scsiID, "rescan"), os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.Write([]byte("1\n")); err != nil {
+		return err
+	}
+	return nil
+}
+
 var ErrUnknownFilesystem = errors.New("could not get device filesystem type")
 
 // getDeviceFsType finds a device's filesystem.
