@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/Microsoft/hcsshim/pkg/annotations"
-	"github.com/Microsoft/hcsshim/test/pkg/definitions/extendedtask"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 	"github.com/Microsoft/hcsshim/test/pkg/definitions/shimdiag"
 )
 

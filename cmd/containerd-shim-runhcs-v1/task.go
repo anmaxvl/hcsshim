@@ -7,14 +7,16 @@ import (
 	"errors"
 	"time"
 
+	task "github.com/containerd/containerd/api/runtime/task/v2"
+	"github.com/containerd/errdefs"
+	"github.com/opencontainers/runtime-spec/specs-go"
+
 	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
 	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
 	"github.com/Microsoft/hcsshim/internal/hcs"
 	"github.com/Microsoft/hcsshim/internal/shimdiag"
 	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
-	task "github.com/containerd/containerd/api/runtime/task/v2"
-	"github.com/containerd/errdefs"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 var (
@@ -66,10 +68,10 @@ type shimTask interface {
 	// additional exec's tracked by this task must also be in the
 	// `shimExecStateExited` state.
 	DeleteExec(ctx context.Context, eid string) (int, uint32, time.Time, error)
-	// Pids returns all process pid's in this `shimTask` including ones not
+	// Pids returns all process pids in this `shimTask` including ones not
 	// created by the caller via a `CreateExec`.
 	Pids(ctx context.Context) ([]*options.ProcessDetails, error)
-	// Waits for the the init task to complete.
+	// Wait waits for the init task to complete.
 	//
 	// Note: If the `request.ExecID == ""` the caller should instead call `Wait`
 	// rather than `exec.Wait` on the init exec. This is because  the lifetime
@@ -99,6 +101,8 @@ type shimTask interface {
 	ProcessorInfo(ctx context.Context) (*processorInfo, error)
 	// Update updates a task's container
 	Update(ctx context.Context, req *task.UpdateTaskRequest) error
+	// CreateSocket returns connection info for connecting to a given container via HvSocket or Unix socket.
+	CreateSocket(ctx context.Context, req *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error)
 }
 
 type processorInfo struct {

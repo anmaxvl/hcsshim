@@ -1,10 +1,12 @@
 package extendedtask
 
 import (
-	internalextended "github.com/Microsoft/hcsshim/internal/extendedtask"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
-var NewExtendedTaskClient = internalextended.NewExtendedTaskClient
+type ComputeProcessorInfoRequest = extendedtask.ComputeProcessorInfoRequest
+type ComputeProcessorInfoResponse = extendedtask.ComputeProcessorInfoResponse
+type CreateSocketRequest = extendedtask.CreateSocketRequest
+type CreateSocketResponse = extendedtask.CreateSocketResponse
 
-type ComputeProcessorInfoRequest = internalextended.ComputeProcessorInfoRequest
-type ComputeProcessorInfoResponse = internalextended.ComputeProcessorInfoResponse
+var NewExtendedTaskClient = extendedtask.NewExtendedTaskClient

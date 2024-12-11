@@ -6,16 +6,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
-	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
-	"github.com/Microsoft/hcsshim/internal/shimdiag"
-	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
 	v1 "github.com/containerd/cgroups/v3/cgroup1/stats"
 	task "github.com/containerd/containerd/api/runtime/task/v2"
 	"github.com/containerd/errdefs"
 	typeurl "github.com/containerd/typeurl/v2"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
+
+	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
+	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
+	"github.com/Microsoft/hcsshim/internal/shimdiag"
+	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 var _ = (shimTask)(&testShimTask{})
@@ -133,6 +135,10 @@ func (tst *testShimTask) Share(ctx context.Context, req *shimdiag.ShareRequest) 
 }
 
 func (tst *testShimTask) ProcessorInfo(ctx context.Context) (*processorInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (tst *testShimTask) CreateSocket(_ context.Context, _ *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error) {
 	return nil, errors.New("not implemented")
 }
 

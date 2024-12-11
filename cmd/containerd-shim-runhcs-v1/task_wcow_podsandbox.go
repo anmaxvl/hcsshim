@@ -7,13 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
-	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
-	"github.com/Microsoft/hcsshim/internal/cmd"
-	"github.com/Microsoft/hcsshim/internal/log"
-	"github.com/Microsoft/hcsshim/internal/oc"
-	"github.com/Microsoft/hcsshim/internal/shimdiag"
-	"github.com/Microsoft/hcsshim/internal/uvm"
 	eventstypes "github.com/containerd/containerd/api/events"
 	task "github.com/containerd/containerd/api/runtime/task/v2"
 	"github.com/containerd/containerd/runtime"
@@ -22,6 +15,15 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+
+	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
+	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
+	"github.com/Microsoft/hcsshim/internal/cmd"
+	"github.com/Microsoft/hcsshim/internal/log"
+	"github.com/Microsoft/hcsshim/internal/oc"
+	"github.com/Microsoft/hcsshim/internal/shimdiag"
+	"github.com/Microsoft/hcsshim/internal/uvm"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 // newWcowPodSandboxTask creates a fake WCOW task with a fake WCOW `init`
@@ -312,4 +314,8 @@ func (wpst *wcowPodSandboxTask) ProcessorInfo(ctx context.Context) (*processorIn
 	return &processorInfo{
 		count: wpst.host.ProcessorCount(),
 	}, nil
+}
+
+func (wpst *wcowPodSandboxTask) CreateSocket(_ context.Context, _ *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error) {
+	return nil, errors.New("not implemented")
 }

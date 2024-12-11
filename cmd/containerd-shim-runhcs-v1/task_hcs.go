@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Microsoft/go-winio/pkg/fs"
 	eventstypes "github.com/containerd/containerd/api/events"
 	"github.com/containerd/containerd/api/runtime/task/v2"
 	"github.com/containerd/containerd/api/types"
@@ -23,7 +24,6 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/Microsoft/go-winio/pkg/fs"
 	runhcsopts "github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
 	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
 	"github.com/Microsoft/hcsshim/internal/cmd"
@@ -49,6 +49,7 @@ import (
 	"github.com/Microsoft/hcsshim/osversion"
 	"github.com/Microsoft/hcsshim/pkg/annotations"
 	"github.com/Microsoft/hcsshim/pkg/ctrdtaskapi"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 func newHcsStandaloneTask(ctx context.Context, events publisher, req *task.CreateTaskRequest, s *specs.Spec) (shimTask, error) {
@@ -970,6 +971,33 @@ func (ht *hcsTask) ProcessorInfo(ctx context.Context) (*processorInfo, error) {
 	return &processorInfo{
 		count: ht.host.ProcessorCount(),
 	}, nil
+}
+
+func (ht *hcsTask) CreateSocket(ctx context.Context, req *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error) {
+	log.G(ctx).Debug("hcsTask:CreateSocket")
+	if ht.host == nil {
+		// TODO: Should this still work?
+		return nil, errTaskNotIsolated
+	}
+	if !ht.ownsHost {
+		closer, serviceID, err := ht.host.RedirectContainerHvSocket(ctx, req.GetContainerID())
+		if err != nil {
+			return nil, err
+		}
+		ht.cr.Add(closer)
+		return &extendedtask.CreateSocketResponse{
+			ConnectionInfo: &extendedtask.CreateSocketResponse_HvSocket{
+				HvSocket: &extendedtask.HvSocket{
+					VmID:      ht.host.ID(),
+					ServiceID: serviceID,
+				},
+			},
+		}, nil
+	}
+
+	// TODO: This path is the update request for the UVM
+	// This should probably be a no-op
+	return nil, errors.New("not implemented")
 }
 
 func (ht *hcsTask) requestAddContainerMount(ctx context.Context, resourcePath string, settings interface{}) error {

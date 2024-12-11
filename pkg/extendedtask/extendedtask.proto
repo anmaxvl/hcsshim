@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+service ExtendedTask {
+  rpc ComputeProcessorInfo(ComputeProcessorInfoRequest) returns (ComputeProcessorInfoResponse) {}
+
+  rpc CreateSocket(CreateSocketRequest) returns (CreateSocketResponse) {}
+}
+
+message ComputeProcessorInfoRequest {
+  string id = 1;
+}
+
+message ComputeProcessorInfoResponse {
+  int32 count = 1;
+}
+
+message CreateSocketRequest {
+  string container_id = 1;
+}
+
+message CreateSocketResponse {
+  string container_id = 1;
+  oneof connection_info {
+    HvSocket hv_socket = 2;
+    UnixSocket unix_socket = 3;
+  };
+}
+
+message HvSocket {
+  string vm_id = 1;
+  string service_id = 2;
+}
+
+message UnixSocket {
+  string vm_id = 1;
+  string socket_path = 2;
+}

@@ -16,6 +16,7 @@ generators = ["go", "go-grpc"]
 
 [[overrides]]
 prefixes = [
+  "github.com/Microsoft/hcsshim/pkg/extendedtask",
   "github.com/Microsoft/hcsshim/internal/shimdiag",
   "github.com/Microsoft/hcsshim/internal/extendedtask",
   "github.com/Microsoft/hcsshim/internal/computeagent",
@@ -23,3 +24,7 @@ prefixes = [
   "github.com/Microsoft/hcsshim/internal/vmservice",
 ]
 generators = ["go", "go-ttrpc"]
+# Override the go package path for the generated code. This allows us to not need a go_package
+# directive in the proto file itself, which is nice so we can share it with other projects easily.
+parameters.go."Mgithub.com/Microsoft/hcsshim/pkg/extendedtask/extendedtask.proto" = "github.com/Microsoft/hcsshim/pkg/extendedtask;extendedtask"
+parameters.go-ttrpc."Mgithub.com/Microsoft/hcsshim/pkg/extendedtask/extendedtask.proto" = "github.com/Microsoft/hcsshim/pkg/extendedtask;extendedtask"

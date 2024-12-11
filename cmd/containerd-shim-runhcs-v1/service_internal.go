@@ -20,9 +20,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	runhcsopts "github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
-	"github.com/Microsoft/hcsshim/internal/extendedtask"
+	"github.com/Microsoft/hcsshim/internal/log"
 	"github.com/Microsoft/hcsshim/internal/oci"
 	"github.com/Microsoft/hcsshim/internal/shimdiag"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 var empty = &emptypb.Empty{}
@@ -519,4 +520,18 @@ func (s *service) computeProcessorInfoInternal(ctx context.Context, req *extende
 	return &extendedtask.ComputeProcessorInfoResponse{
 		Count: info.count,
 	}, nil
+}
+
+func (s *service) createSocketInternal(ctx context.Context, req *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error) {
+	log.G(ctx).Debug("service:listenSocketInternal")
+	t, err := s.getTask(req.GetContainerID())
+	if err != nil {
+		return nil, err
+	}
+
+	r, e := t.CreateSocket(ctx, req)
+	if e != nil {
+		return nil, e
+	}
+	return r, nil
 }

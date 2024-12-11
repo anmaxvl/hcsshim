@@ -24,9 +24,9 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	runhcsopts "github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
-	"github.com/Microsoft/hcsshim/internal/extendedtask"
 	hcslog "github.com/Microsoft/hcsshim/internal/log"
 	"github.com/Microsoft/hcsshim/internal/shimdiag"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 	"github.com/Microsoft/hcsshim/pkg/octtrpc"
 )
 

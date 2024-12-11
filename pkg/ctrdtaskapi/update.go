@@ -1,7 +1,7 @@
 package ctrdtaskapi
 
 import (
-	typeurl "github.com/containerd/typeurl/v2"
+	"github.com/containerd/typeurl/v2"
 )
 
 func init() {

@@ -8,6 +8,8 @@ import (
 
 	"github.com/Microsoft/hcsshim/internal/hcs/resourcepaths"
 	hcsschema "github.com/Microsoft/hcsshim/internal/hcs/schema2"
+	"github.com/Microsoft/hcsshim/internal/hvsocket"
+	"github.com/Microsoft/hcsshim/internal/oc"
 	"github.com/Microsoft/hcsshim/internal/protocol/guestrequest"
 )
 
@@ -43,4 +45,22 @@ func (uvm *UtilityVM) RemoveHvSocketService(ctx context.Context, sid string) err
 		ResourcePath: fmt.Sprintf(resourcepaths.HvSocketConfigResourceFormat, sid),
 	}
 	return uvm.modify(ctx, request)
+}
+
+func (uvm *UtilityVM) RedirectContainerHvSocket(ctx context.Context, cid string) (handle hvsocket.Handle, serviceID string, err error) {
+	ctx, span := oc.StartSpan(ctx, "RedirectContainerHvSocket")
+	defer span.End()
+	defer func() {
+		oc.SetSpanStatus(span, err)
+	}()
+
+	containerGUID, err := hvsocket.HCSIDToGUID(cid)
+	if err != nil {
+		return 0, "", err
+	}
+	handle, err = hvsocket.CreateAddressInfo(containerGUID, uvm.runtimeID, true)
+	if err != nil {
+		return 0, "", err
+	}
+	return handle, containerGUID.String(), nil
 }

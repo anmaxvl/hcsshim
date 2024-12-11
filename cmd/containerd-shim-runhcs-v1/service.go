@@ -16,9 +16,10 @@ import (
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/Microsoft/hcsshim/internal/extendedtask"
+	"github.com/Microsoft/hcsshim/internal/log"
 	"github.com/Microsoft/hcsshim/internal/oc"
 	"github.com/Microsoft/hcsshim/internal/shimdiag"
+	"github.com/Microsoft/hcsshim/pkg/extendedtask"
 )
 
 type ServiceOptions struct {
@@ -553,4 +554,15 @@ func (s *service) IsShutdown() bool {
 	default:
 		return false
 	}
+}
+
+func (s *service) CreateSocket(ctx context.Context, req *extendedtask.CreateSocketRequest) (*extendedtask.CreateSocketResponse, error) {
+	ctx, span := oc.StartSpan(ctx, "CreateSocket")
+	defer span.End()
+
+	span.AddAttributes(trace.StringAttribute("tid", s.tid))
+
+	log.G(ctx).Debug("service::CreateSocket")
+	r, e := s.createSocketInternal(ctx, req)
+	return r, errdefs.ToGRPC(e)
 }
