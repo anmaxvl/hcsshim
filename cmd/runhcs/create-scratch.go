@@ -36,6 +36,10 @@ var createScratchCommand = cli.Command{
 			Name:  "use-virtual-memory",
 			Usage: "optional: Whether the UVM should be backed with virtual memory.",
 		},
+		cli.StringFlag{
+			Name:  "kernel-args",
+			Usage: "optional: additional kernel args to be passed as init parameters",
+		},
 	},
 	Before: appargs.Validate(),
 	Action: func(context *cli.Context) (err error) {
@@ -70,6 +74,11 @@ var createScratchCommand = cli.Command{
 		sizeGB := uint32(context.Uint("sizeGB"))
 		if sizeGB == 0 {
 			sizeGB = lcow.DefaultScratchSizeGB
+		}
+
+		kernelArgs := context.String("kernel-args")
+		if kernelArgs != "" {
+			opts.KernelBootOptions = kernelArgs
 		}
 
 		convertUVM, err := uvm.CreateLCOW(ctx, opts)

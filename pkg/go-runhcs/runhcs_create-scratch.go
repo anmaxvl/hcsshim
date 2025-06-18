@@ -25,6 +25,9 @@ type CreateScratchOpts struct {
 	// UseVirtualMemory indicates whether the UVM used to create the
 	// scratch should be backed with virtual memory or not.
 	UseVirtualMemory bool
+	// KernelArgs can be used to pass additional kernel init args, e.g.
+	// for enabling/disabling certain modules.
+	KernelArgs string
 }
 
 func (opt *CreateScratchOpts) args() ([]string, error) {
@@ -43,6 +46,9 @@ func (opt *CreateScratchOpts) args() ([]string, error) {
 	}
 	if opt.UseVirtualMemory {
 		out = append(out, "--use-virtual-memory")
+	}
+	if opt.KernelArgs != "" {
+		out = append(out, "--kernel-args", opt.KernelArgs)
 	}
 	return out, nil
 }
