@@ -101,10 +101,8 @@ func ParseNamedPipe(uvm *UtilityVM, mount specs.Mount) (NamedPipe, bool) {
 	} else if strings.HasPrefix(mount.Source, guestpath.UVMMountPrefix) {
 		sourcePath = strings.TrimPrefix(mount.Source, guestpath.UVMMountPrefix)
 		// check if it's a UVM pipe
-		if strings.HasPrefix(sourcePath, pipePrefix) && uvm != nil {
+		if strings.HasPrefix(sourcePath, pipePrefix) {
 			isUVMPipe = true
-			podID := strings.TrimSuffix(uvm.id, "@vm")
-			sourcePath = fmt.Sprintf(`%s%s\%s`, pipePrefix, podID, strings.TrimPrefix(sourcePath, pipePrefix))
 		}
 	}
 	if !isHostPipe && !isUVMPipe {

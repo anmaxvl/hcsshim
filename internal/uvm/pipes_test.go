@@ -77,7 +77,7 @@ func Test_ParseNamedPipe(t *testing.T) {
 				Destination: `\\.\pipe\containerPipe`,
 			},
 			parsedNamedPipe: NamedPipe{
-				HostPath:      `\\.\pipe\pod-id\uvmPipe`,
+				HostPath:      `\\.\pipe\uvmPipe`,
 				ContainerPath: `containerPipe`,
 				UVMPipe:       true,
 			},
