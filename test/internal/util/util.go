@@ -135,8 +135,8 @@ func RandNameSuffix(xs ...any) (s string) {
 }
 
 const (
-	RemoveAttempts = 3
-	RemoveWait     = time.Millisecond
+	RemoveAttempts = 5
+	RemoveWait     = 200 * time.Millisecond
 )
 
 // RemoveAll tries [RemoveAttempts] times to remove the path via [os.RemoveAll], waiting
